@@ -1,0 +1,61 @@
+=== 1. 기본 연결 테스트 ===
+ connected_user | database_name |                                                            postgres_version                                                            
+----------------+---------------+----------------------------------------------------------------------------------------------------------------------------------------
+ test_user      | hidle         | PostgreSQL 14.18 (Ubuntu 14.18-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0, 64-bit
+(1 row)
+
+=== 2. 현재 test_user 권한 상태 ===
+psql:/Users/doseon/Desktop/Hancom AI/project/DB-Module/diagnostic_queries.sql:21: ERROR:  column "schemaname" does not exist
+LINE 2:     schemaname, 
+            ^
+=== 3. 필수 테이블 존재 여부 ===
+      table_name       | table_type |    status     
+-----------------------+------------+---------------
+ chat_messages         | BASE TABLE | 📋 추가 테이블
+ setting_options       | BASE TABLE | ✅ 필수 테이블
+ user_selected_options | BASE TABLE | ✅ 필수 테이블
+ users                 | BASE TABLE | ✅ 필수 테이블
+(4 rows)
+
+=== 4. 외래키 제약조건 상태 ===
+ constraint_name | table_name | column_name | foreign_table_name | foreign_column_name 
+-----------------+------------+-------------+--------------------+---------------------
+(0 rows)
+
+=== 5. 인덱스 상태 확인 ===
+         indexname          |       tablename       |                                                    indexdef                                                     
+----------------------------+-----------------------+-----------------------------------------------------------------------------------------------------------------
+ chat_messages_pkey         | chat_messages         | CREATE UNIQUE INDEX chat_messages_pkey ON public.chat_messages USING btree (message_id)
+ setting_options_pkey       | setting_options       | CREATE UNIQUE INDEX setting_options_pkey ON public.setting_options USING btree (id)
+ unique_type_option         | setting_options       | CREATE UNIQUE INDEX unique_type_option ON public.setting_options USING btree (setting_type, option_value)
+ user_selected_options_pkey | user_selected_options | CREATE UNIQUE INDEX user_selected_options_pkey ON public.user_selected_options USING btree (user_id, option_id)
+ users_email_key            | users                 | CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email)
+ users_pkey                 | users                 | CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)
+(6 rows)
+
+=== 6. 시퀀스 권한 상태 ===
+ sequence_name | data_type | start_value | increment 
+---------------+-----------+-------------+-----------
+ users_id_seq  | bigint    | 1           | 1
+(1 row)
+
+=== 7. 현재 데이터 현황 ===
+      table_name       | record_count 
+-----------------------+--------------
+ users                 |            2
+ setting_options       |            0
+ user_selected_options |            0
+ chat_messages         |            0
+(4 rows)
+
+=== 8. 권한 테스트 실행 ===
+BEGIN
+psql:/Users/doseon/Desktop/Hancom AI/project/DB-Module/diagnostic_queries.sql:100: NOTICE:  ✅ users INSERT 권한: 정상
+DO
+ROLLBACK
+psql:/Users/doseon/Desktop/Hancom AI/project/DB-Module/diagnostic_queries.sql:122: NOTICE:  ❌ users UPDATE 권한: 실패 - permission denied for table users
+DO
+psql:/Users/doseon/Desktop/Hancom AI/project/DB-Module/diagnostic_queries.sql:134: NOTICE:  ❌ user_selected_options DELETE 권한: 실패 - permission denied for table user_selected_options
+DO
+=== 진단 완료 ===;
+위 결과를 바탕으로 필요한 권한 수정을 진행하세요.;

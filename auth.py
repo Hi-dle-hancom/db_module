@@ -3,14 +3,57 @@ from fastapi.security import APIKeyHeader
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
+import os
 
 import database
 from models import TokenData, UserInDB
 
-# --- JWT 설정 ---
-SECRET_KEY = "YOUR_VERY_SECRET_KEY_FOR_PASSWORDLESS_AUTH" # 실제 운영 시에는 복잡하고 안전한 키로 변경
+# --- JWT 설정 (환경변수 사용) - 보안 강화 ---
+def get_secure_secret_key() -> str:
+    """JWT SECRET_KEY를 안전하게 가져오는 함수"""
+    secret_key = os.getenv("JWT_SECRET_KEY")
+    environment = os.getenv("ENVIRONMENT", "development")
+    
+    # 운영 환경에서는 반드시 환경 변수 설정 필요
+    if environment == "production":
+        if not secret_key:
+            raise ValueError(
+                "🚨 [PRODUCTION] JWT_SECRET_KEY 환경변수가 설정되지 않았습니다! "
+                "보안을 위해 반드시 설정해야 합니다."
+            )
+        if len(secret_key) < 32:
+            raise ValueError(
+                "🚨 [PRODUCTION] JWT_SECRET_KEY는 최소 32자 이상이어야 합니다! "
+                f"현재 길이: {len(secret_key)}"
+            )
+        # 운영 환경에서 기본값 사용 방지
+        if secret_key in ["YOUR_VERY_SECRET_KEY_FOR_PASSWORDLESS_AUTH", "test", "dev", "secret"]:
+            raise ValueError(
+                "🚨 [PRODUCTION] 안전하지 않은 SECRET_KEY가 감지되었습니다! "
+                "복잡하고 고유한 키를 사용하세요."
+            )
+    
+    # 개발 환경에서도 기본값 사용 시 경고
+    if not secret_key:
+        import warnings
+        warnings.warn(
+            "⚠️ [DEVELOPMENT] JWT_SECRET_KEY가 설정되지 않아 기본값을 사용합니다. "
+            "운영 환경에서는 반드시 설정하세요!",
+            UserWarning
+        )
+        return "HAPA_DEV_SECRET_KEY_FOR_DEVELOPMENT_ONLY_CHANGE_IN_PRODUCTION_32CHARS"
+    
+    return secret_key
+
+SECRET_KEY = get_secure_secret_key()
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 365 # 토큰 유효기간을 1년으로 설정
+ACCESS_TOKEN_EXPIRE_DAYS = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS", "365"))
+
+# 추가 보안 검증
+if ACCESS_TOKEN_EXPIRE_DAYS > 365:
+    raise ValueError(f"🚨 토큰 만료 기간이 너무 깁니다: {ACCESS_TOKEN_EXPIRE_DAYS}일 (최대 365일)")
+
+print(f"✅ JWT 인증 시스템 초기화 완료 (환경: {os.getenv('ENVIRONMENT', 'development')})")
 
 # 헤더에서 'Authorization' 값을 가져오는 새로운 방식
 api_key_header = APIKeyHeader(name="Authorization")
