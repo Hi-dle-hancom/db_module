@@ -20,9 +20,11 @@ class UserInDB(UserBase):
 # --- 인증 관련 모델 ---
 
 class Token(BaseModel):
-    """클라이언트에게 전달될 JWT 토큰 모델"""
+    """보안 강화된 JWT 토큰 모델 (액세스 + 리프레시 토큰)"""
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str
+    expires_in: Optional[int] = None  # 초 단위
 
 class TokenData(BaseModel):
     """JWT 토큰을 디코딩했을 때 얻게 되는 데이터 모델"""

@@ -1,7 +1,22 @@
-import asyncpg
+"""
+HAPA DB Module - 데이터베이스 연결 및 관리
+PostgreSQL 연결 풀 관리와 쿼리 실행을 담당합니다.
+"""
+
+import asyncio
+import logging
 import os
-from typing import Optional
+import re
+from contextlib import asynccontextmanager
+from typing import Any, Dict, List, Optional
+
+import asyncpg
+from fastapi import FastAPI
 from dotenv import load_dotenv
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # 환경변수 파일 명시적 로드
 load_dotenv()
@@ -54,7 +69,7 @@ if not DATABASE_URL.startswith("postgresql://"):
         f"현재 값: {DATABASE_URL[:20]}..."
     )
 
-print(f"🔗 데이터베이스 연결 정보 로드 완료: {_extract_host_from_url(DATABASE_URL)}")
+    logger.info(f"🔗 데이터베이스 연결 정보 로드 완료: {_extract_host_from_url(DATABASE_URL)}")
 
 pool: Optional[asyncpg.Pool] = None
 
@@ -68,7 +83,7 @@ async def connect_to_db():
     """애플리케이션 시작 시 데이터베이스 커넥션 풀을 생성합니다."""
     global pool
     try:
-        print(f"🔗 데이터베이스 연결 풀 생성 중... (Host: {_extract_host_from_url(DATABASE_URL)})")
+        logger.info(f"🔗 데이터베이스 연결 풀 생성 중... (Host: {_extract_host_from_url(DATABASE_URL)})")
         
         # 연결 풀 설정 최적화
         pool = await asyncpg.create_pool(
@@ -84,14 +99,14 @@ async def connect_to_db():
             db_name = await connection.fetchval("SELECT current_database()")
             user_name = await connection.fetchval("SELECT current_user")
             
-        print(f"✅ 데이터베이스 연결 풀 생성 완료!")
-        print(f"   📊 데이터베이스: {db_name}")
-        print(f"   👤 사용자: {user_name}")
-        print(f"   🔧 연결 풀 크기: 2-10")
+        logger.info(f"✅ 데이터베이스 연결 풀 생성 완료!")
+        logger.info(f"   📊 데이터베이스: {db_name}")
+        logger.info(f"   👤 사용자: {user_name}")
+        logger.info(f"   🔧 연결 풀 크기: 2-10")
         
     except Exception as e:
-        print(f"❌ 데이터베이스 연결 실패: {type(e).__name__}: {e}")
-        print(f"   🔍 연결 정보: {_extract_host_from_url(DATABASE_URL)}")
+        logger.error(f"❌ 데이터베이스 연결 실패: {type(e).__name__}: {e}")
+        logger.error(f"   🔍 연결 정보: {_extract_host_from_url(DATABASE_URL)}")
         raise
 
 async def close_db_connection():
@@ -99,6 +114,6 @@ async def close_db_connection():
     global pool
     if pool:
         await pool.close()
-        print("✅ 데이터베이스 커넥션 풀이 정상 종료되었습니다.")
+        logger.info("✅ 데이터베이스 커넥션 풀이 정상 종료되었습니다.")
     else:
-        print("⚠️ 데이터베이스 커넥션 풀이 이미 종료되었거나 초기화되지 않았습니다.")
+        logger.warning("⚠️ 데이터베이스 커넥션 풀이 이미 종료되었거나 초기화되지 않았습니다.")
