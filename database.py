@@ -14,9 +14,24 @@ import asyncpg
 from fastapi import FastAPI
 from dotenv import load_dotenv
 
-# MongoDB 지원 추가
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo.errors import ServerSelectionTimeoutError, ConfigurationError
+# 🔧 선택적 MongoDB 지원 (의존성 실패 시에도 기본 기능은 동작)
+try:
+    from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+    from pymongo.errors import ServerSelectionTimeoutError, ConfigurationError
+    MOTOR_AVAILABLE = True
+    print("✅ Motor(MongoDB) 의존성 로드됨")
+except ImportError as e:
+    print(f"⚠️ Motor(MongoDB) 없음: {e} - PostgreSQL만 사용")
+    MOTOR_AVAILABLE = False
+    # 더미 클래스 (import 에러 방지)
+    class AsyncIOMotorClient:
+        pass
+    class AsyncIOMotorDatabase:
+        pass
+    class ServerSelectionTimeoutError(Exception):
+        pass
+    class ConfigurationError(Exception):
+        pass
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -134,12 +149,16 @@ async def get_db_pool() -> asyncpg.Pool:
 
 async def get_mongo_db() -> AsyncIOMotorDatabase:
     """MongoDB 데이터베이스 인스턴스를 반환합니다."""
+    if not MOTOR_AVAILABLE:
+        return None  # MongoDB 없는 경우 None 반환
     if mongo_db is None:
         raise RuntimeError("MongoDB 연결이 초기화되지 않았습니다. connect_to_db()를 먼저 호출하세요.")
     return mongo_db
 
 async def get_mongo_client() -> AsyncIOMotorClient:
     """MongoDB 클라이언트 인스턴스를 반환합니다."""
+    if not MOTOR_AVAILABLE:
+        return None  # MongoDB 없는 경우 None 반환
     if mongo_client is None:
         raise RuntimeError("MongoDB 클라이언트가 초기화되지 않았습니다. connect_to_db()를 먼저 호출하세요.")
     return mongo_client

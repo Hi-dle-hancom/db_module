@@ -8,12 +8,24 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from pymongo import DESCENDING
-from pymongo.errors import DuplicateKeyError
+
+# 🔧 선택적 MongoDB 의존성 import (import 실패 시에도 라우터 등록은 가능)
+try:
+    from motor.motor_asyncio import AsyncIOMotorDatabase
+    from pymongo import DESCENDING
+    from pymongo.errors import DuplicateKeyError
+    MONGODB_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ MongoDB 의존성 없음: {e}")
+    MONGODB_AVAILABLE = False
+    # 임시 클래스들 (라우터 등록을 위해)
+    class AsyncIOMotorDatabase:
+        pass
+    DESCENDING = -1
+    class DuplicateKeyError(Exception):
+        pass
 
 from auth import get_current_user
-from database import get_mongo_db
 from models import (
     ConversationEntry,
     ConversationSession,
@@ -27,6 +39,14 @@ from models import (
     UserInDB,
 )
 
+# 선택적 MongoDB 연결
+try:
+    from database import get_mongo_db
+except ImportError:
+    # MongoDB가 없는 경우 더미 함수
+    async def get_mongo_db():
+        return None
+
 router = APIRouter(prefix="/history", tags=["history"])
 
 # ====== 세션 관리 엔드포인트 ======
@@ -38,6 +58,13 @@ async def create_session(
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
     """새로운 대화 세션을 생성합니다."""
+    # MongoDB 가용성 체크
+    if not MONGODB_AVAILABLE or db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="History service is temporarily unavailable (MongoDB not connected)"
+        )
+    
     try:
         session_id = f"session_{uuid.uuid4().hex[:8]}"
         current_time = datetime.now()
@@ -99,6 +126,11 @@ async def get_recent_sessions(
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
     """최근 대화 세션 목록을 조회합니다."""
+    # MongoDB 가용성 체크
+    if not MONGODB_AVAILABLE or db is None:
+        # MongoDB가 없는 경우 빈 배열 반환 (404 대신 빈 결과로 처리)
+        return []
+    
     try:
         collection = db["history"]
         
