@@ -18,26 +18,32 @@ from models import TokenData, UserInDB
 # 로거 설정
 logger = logging.getLogger(__name__)
 
-# JWT 보안 설정
-def get_secure_secret_key() -> str:
-    """JWT SECRET_KEY를 안전하게 가져오는 함수"""
-    secret_key = os.getenv("JWT_SECRET_KEY")
-    environment = os.getenv("ENVIRONMENT", "development")
-    
-    if environment == "production":
-        if not secret_key:
-            raise ValueError("🚨 [PRODUCTION] JWT_SECRET_KEY 환경변수가 설정되지 않았습니다!")
-        if len(secret_key) < 32:
-            raise ValueError(f"🚨 [PRODUCTION] JWT_SECRET_KEY는 최소 32자 이상이어야 합니다! 현재 길이: {len(secret_key)}")
-    
-    if not secret_key:
-        import warnings
-        warnings.warn("⚠️ [DEVELOPMENT] JWT_SECRET_KEY가 설정되지 않아 기본값을 사용합니다.", UserWarning)
-        return "HAPA_DEV_SECRET_KEY_FOR_DEVELOPMENT_ONLY_CHANGE_IN_PRODUCTION_32CHARS"
-    
-    return secret_key
+# 보안 강화된 JWT 관리자 import
+from secure_jwt_manager import jwt_manager
 
-SECRET_KEY = get_secure_secret_key()
+# JWT 보안 설정
+try:
+    SECRET_KEY = jwt_manager.get_jwt_secret_key()
+    
+    # JWT 설정 검증
+    validation_result = jwt_manager.validate_jwt_setup()
+    
+    if validation_result['status'] == 'critical':
+        raise ValueError(f"🚨 JWT 설정 치명적 오류: {validation_result['issues']}")
+    elif validation_result['status'] == 'warning':
+        for issue in validation_result['issues']:
+            logger.warning(f"⚠️ JWT 설정 경고: {issue}")
+    
+    # 키 정보 로그 (보안 정보 제외)
+    key_info = jwt_manager.get_key_info()
+    logger.info(f"🔐 JWT 설정 로드됨 - ID: {key_info['key_id']}, 길이: {key_info['key_length']}, 환경: {key_info['environment']}")
+    
+    if key_info['is_temporary']:
+        logger.warning("🔶 임시 JWT 키 사용 중. 운영 환경에서는 고정 키를 사용하세요!")
+    
+except Exception as e:
+    logger.error(f"🚨 JWT 시크릿 키 로드 실패: {e}")
+    raise
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
@@ -132,7 +138,10 @@ class TokenService:
             
             return payload
             
-        except JWTError:
+        except JWTError as e:
+            logger.error(f"JWT 토큰 검증 실패: {str(e)}")
+            logger.error(f"사용된 SECRET_KEY: {SECRET_KEY[:20]}...")
+            logger.error(f"토큰 길이: {len(token)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="토큰 검증에 실패했습니다"
