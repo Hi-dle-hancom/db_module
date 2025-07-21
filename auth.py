@@ -18,32 +18,33 @@ from models import TokenData, UserInDB
 # 로거 설정
 logger = logging.getLogger(__name__)
 
-# JWT 보안 설정 (Docker 환경 최적화)
+# 🔐 JWT 보안 설정 (Backend와 동기화)
 def get_secure_secret_key() -> str:
-    """Docker 환경에서 안전한 JWT SECRET_KEY 로드"""
-    secret_key = os.getenv("JWT_SECRET_KEY")
+    """Backend와 동일한 방식으로 JWT SECRET_KEY 로드"""
+    # Backend config.py와 동일한 기본값 사용
+    secret_key = os.getenv("JWT_SECRET_KEY", "HAPA_UNIFIED_SECRET_KEY_FOR_DEVELOPMENT_ONLY_CHANGE_IN_PRODUCTION_32CHARS")
     environment = os.getenv("ENVIRONMENT", "development")
     
-    # 디버깅 정보 출력
-    logger.info(f"🔐 JWT_SECRET_KEY 환경변수: {'설정됨' if secret_key else '없음'}")
-    logger.info(f"🌍 환경: {environment}")
-    if secret_key:
-        logger.info(f"🔑 JWT_SECRET_KEY 길이: {len(secret_key)}")
+    # 🔍 디버깅 정보 출력 (Backend와 비교용)
+    logger.info(f"🔐 DB Module JWT SECRET_KEY 로드")
+    logger.info(f"🔍 환경: {environment}")
+    logger.info(f"🔍 JWT_SECRET_KEY 길이: {len(secret_key)}")
+    logger.info(f"🔍 JWT_SECRET_KEY prefix: {secret_key[:20]}...")
+    logger.info(f"🔍 환경변수에서 로드: {'YES' if os.getenv('JWT_SECRET_KEY') else 'NO (기본값 사용)'}")
     
     if environment == "production":
-        if not secret_key:
+        if not os.getenv("JWT_SECRET_KEY"):
             raise ValueError("🚨 [PRODUCTION] JWT_SECRET_KEY 환경변수가 설정되지 않았습니다!")
         if len(secret_key) < 32:
             raise ValueError(f"🚨 [PRODUCTION] JWT_SECRET_KEY는 최소 32자 이상이어야 합니다! 현재 길이: {len(secret_key)}")
     
-    if not secret_key:
-        import warnings
-        warnings.warn("⚠️ [DEVELOPMENT] JWT_SECRET_KEY가 설정되지 않아 기본값을 사용합니다.", UserWarning)
-        default_key = "HAPA_UNIFIED_SECRET_KEY_FOR_DEVELOPMENT_ONLY_CHANGE_IN_PRODUCTION_32CHARS"
-        logger.warning(f"🔶 기본 JWT 키 사용 중 (길이: {len(default_key)})")
-        return default_key
+    if secret_key == "HAPA_UNIFIED_SECRET_KEY_FOR_DEVELOPMENT_ONLY_CHANGE_IN_PRODUCTION_32CHARS":
+        if environment == "production":
+            raise ValueError("🚨 [PRODUCTION] 기본 개발용 JWT_SECRET_KEY를 사용할 수 없습니다!")
+        else:
+            logger.warning("⚠️ [DEVELOPMENT] 기본 개발용 JWT_SECRET_KEY 사용 중")
     
-    logger.info("✅ JWT 키 환경변수에서 로드 완료")
+    logger.info("✅ DB Module JWT 키 로드 완료")
     return secret_key
 
 try:
