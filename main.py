@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # 모듈 import
 import database
-from routers import auth_router, settings_router, users_router, admin_router
+from routers import auth_router, settings_router, users_router, admin_router, history_router
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -58,6 +58,7 @@ app.include_router(auth_router)
 app.include_router(settings_router)
 app.include_router(users_router)
 app.include_router(admin_router)
+app.include_router(history_router)
 
 # 애플리케이션 이벤트 핸들러
 @app.on_event("startup")
@@ -85,21 +86,39 @@ async def root():
 @app.get("/health")
 async def health_check():
     """헬스 체크 엔드포인트"""
+    health_status = {
+        "status": "healthy",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "databases": {}
+    }
+    
+    # PostgreSQL 상태 확인
     try:
         pool = await database.get_db_pool()
         async with pool.acquire() as connection:
             await connection.fetchval("SELECT 1")
-        
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "environment": os.getenv("ENVIRONMENT", "development")
-        }
+        health_status["databases"]["postgresql"] = "connected"
     except Exception as e:
+        health_status["databases"]["postgresql"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    # MongoDB 상태 확인 (선택적)
+    try:
+        mongo_client = await database.get_mongo_client()
+        await mongo_client.admin.command('ping')
+        health_status["databases"]["mongodb"] = "connected"
+    except Exception as e:
+        health_status["databases"]["mongodb"] = f"error: {str(e)}"
+        # MongoDB는 선택적이므로 전체 상태에 영향 없음
+    
+    # 전체 상태가 healthy가 아닌 경우 503 반환
+    if health_status["status"] != "healthy":
         raise HTTPException(
             status_code=503,
-            detail=f"Database connection failed: {str(e)}"
+            detail=health_status
         )
+    
+    return health_status
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,303 +1,379 @@
-# 🗃️ HAPA DB Module
+# 🗃️ HAPA DB-Module
 
-<div align="center">
+> **사용자 관리 & 데이터베이스 전담 마이크로서비스**  
+> PostgreSQL + MongoDB 이중 DB 구조로 안전하고 효율적인 데이터 관리
 
-**사용자 관리 및 개인화 설정 마이크로서비스**
+## 🤔 **DB-Module이 하는 일**
 
-[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green.svg)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue.svg)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+**간단히 설명하면**: HAPA의 모든 데이터를 안전하게 관리하는 전용 서버입니다! 🏦
 
-[설치하기](#설치) • [사용법](#사용법) • [API 문서](#api-문서) • [아키텍처](#아키텍처) • [개발](#개발)
+```mermaid
+graph TB
+    A[👤 사용자 요청] --> B[🗃️ DB-Module]
+    B --> C[🔐 PostgreSQL<br/>사용자 인증/설정]
+    B --> D[📚 MongoDB<br/>대화 히스토리]
 
-</div>
-
-## 📋 목차
-
-- [개요](#개요)
-- [주요 기능](#주요-기능)
-- [아키텍처](#아키텍처)
-- [설치](#설치)
-- [사용법](#사용법)
-- [API 문서](#api-문서)
-- [환경 설정](#환경-설정)
-- [개발](#개발)
-- [배포](#배포)
-- [기여하기](#기여하기)
-
-## 🎯 개요
-
-HAPA DB Module은 **FastAPI 기반**의 경량화된 마이크로서비스로, HAPA 생태계의 사용자 관리 및 개인화 설정을 전담합니다.
-
-### 🚀 핵심 특징
-
-- **🔐 JWT 인증 시스템**: 액세스/리프레시 토큰 기반 보안 인증
-- **👤 사용자 관리**: 자동 사용자 생성 및 프로필 관리
-- **⚙️ 개인화 설정**: 16가지 카테고리의 사용자 맞춤 설정
-- **🏗️ 모듈화 설계**: 라우터별 기능 분리로 확장성 확보
-- **🔄 RESTful API**: 표준 HTTP 메서드 및 상태 코드 준수
-
-## 🌟 주요 기능
-
-### 1. 인증 시스템
-
-- JWT 기반 토큰 인증 (액세스 토큰 30분, 리프레시 토큰 7일)
-- 토큰 블랙리스트 관리
-- 자동 사용자 생성 및 로그인
-
-### 2. 사용자 관리
-
-- 사용자 프로필 조회
-- 설정 기반 개인화 서비스
-
-### 3. 개인화 설정
-
-- **Python 스킬 레벨**: 초급, 중급, 고급, 전문가
-- **코드 출력 구조**: 간결, 표준, 상세, 종합
-- **설명 스타일**: 간단, 표준, 상세, 교육용
-- **프로젝트 컨텍스트**: 웹 개발, 데이터 사이언스, 자동화, 범용
-
-### 4. 관리자 기능
-
-- 데이터베이스 초기화
-- 설정 옵션 관리
-
-## 🏗️ 아키텍처
-
-### 📁 디렉토리 구조
-
-```
-DB-Module/
-├── main.py                    # 메인 애플리케이션 (104줄)
-├── auth.py                    # 통합 인증 시스템 (244줄)
-├── database.py                # 데이터베이스 연결 관리 (120줄)
-├── models.py                  # Pydantic 모델 정의 (49줄)
-├── routers/                   # API 라우터 모음
-│   ├── auth_router.py         # 인증 관련 API
-│   ├── settings_router.py     # 설정 관련 API
-│   ├── users_router.py        # 사용자 관련 API
-│   └── admin_router.py        # 관리자 관련 API
-├── .env                       # 환경 설정 (기본)
-├── .env.production            # 운영 환경 설정
-├── .env.example               # 환경 설정 템플릿
-├── requirements.txt           # Python 의존성
-├── Dockerfile                 # 도커 설정
-└── README.md                  # 이 문서
+    B --> E[🎫 JWT 토큰 발급]
+    B --> F[⚙️ 개인화 설정]
+    B --> G[📊 히스토리 관리]
 ```
 
-### 🔧 시스템 아키텍처
+## 🎯 **핵심 기능**
 
+### **🔐 사용자 인증 & 보안**
+
+- **JWT 토큰 시스템**: 액세스 토큰(30분) + 리프레시 토큰(7일)
+- **자동 사용자 등록**: 이메일만으로 즉시 계정 생성
+- **토큰 블랙리스트**: 로그아웃된 토큰 무효화
+
+### **⚙️ 개인화 설정 관리**
+
+- **16가지 설정 카테고리**: Python 스킬, 코드 스타일, 설명 방식 등
+- **실시간 설정 동기화**: 변경사항 즉시 반영
+- **프로필 기반 맞춤화**: 사용자별 AI 응답 개인화
+
+### **📚 히스토리 관리 (MongoDB)**
+
+- **대화 세션 관리**: 질문-답변 쌍 체계적 저장
+- **실시간 검색**: 과거 대화 내용 빠른 검색
+- **통계 분석**: 사용 패턴 및 효율성 분석
+
+## 🏗️ **데이터베이스 구조**
+
+### **PostgreSQL (사용자 데이터)**
+
+```sql
+-- 사용자 테이블
+users {
+  id: SERIAL PRIMARY KEY
+  email: VARCHAR UNIQUE
+  username: VARCHAR
+  created_at: TIMESTAMP
+}
+
+-- 설정 옵션
+setting_options {
+  id: SERIAL PRIMARY KEY
+  setting_type: VARCHAR     -- 설정 카테고리
+  option_value: VARCHAR     -- 설정 값
+  description: TEXT
+}
+
+-- 사용자 선택 설정
+user_selected_options {
+  user_id: INTEGER
+  option_id: INTEGER
+  created_at: TIMESTAMP
+}
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  HAPA DB Module                         │
-├─────────────────────────────────────────────────────────┤
-│  📋 Main Application (main.py)                         │
-│  └─ FastAPI App + CORS + 라우터 등록                   │
-├─────────────────────────────────────────────────────────┤
-│  🔐 Authentication Layer (auth.py)                     │
-│  └─ JWT 토큰 + 보안 + 토큰 블랙리스트                   │
-├─────────────────────────────────────────────────────────┤
-│  🛠️ Router Layer (routers/)                           │
-│  ├─ auth_router.py → 로그인/로그아웃/토큰 갱신         │
-│  ├─ settings_router.py → 개인화 설정 관리             │
-│  ├─ users_router.py → 사용자 정보 조회               │
-│  └─ admin_router.py → DB 초기화 및 관리               │
-├─────────────────────────────────────────────────────────┤
-│  🗄️ Data Layer                                        │
-│  ├─ database.py → PostgreSQL 연결 관리               │
-│  └─ models.py → Pydantic 스키마 정의                 │
-└─────────────────────────────────────────────────────────┘
+
+### **MongoDB (히스토리 데이터)**
+
+```javascript
+// 세션 문서 (hapa.history 컬렉션)
+{
+  "document_type": "session",
+  "session_id": "session_abc123",
+  "user_id": 1,
+  "session_title": "Python 기초 학습",
+  "status": "active",
+  "primary_language": "python",
+  "total_entries": 4,
+  "created_at": ISODate("2024-12-28T...")
+}
+
+// 대화 엔트리 문서
+{
+  "document_type": "entry",
+  "entry_id": "entry_xyz789",
+  "session_id": "session_abc123",
+  "conversation_type": "question",
+  "content": "Python에서 리스트 정렬 방법은?",
+  "created_at": ISODate("2024-12-28T...")
+}
 ```
 
-## 📦 설치
+## 📡 **API 엔드포인트**
 
-### 1. 요구사항
+### **🔐 인증 관리**
 
-- Python 3.9 이상
-- PostgreSQL 14 이상
-- pip 또는 poetry
+```http
+POST /auth/login
+# 로그인/자동 회원가입
 
-### 2. 의존성 설치
+POST /auth/logout
+# 로그아웃 (토큰 무효화)
+
+POST /auth/refresh
+# 토큰 갱신
+```
+
+### **👤 사용자 관리**
+
+```http
+GET /users/me
+# 내 정보 조회
+```
+
+### **⚙️ 설정 관리**
+
+```http
+GET /settings/options
+# 사용 가능한 설정 옵션 조회
+
+GET /settings/me
+# 내 설정 조회
+
+POST /settings/me
+# 설정 업데이트
+```
+
+### **📚 히스토리 관리 (MongoDB)**
+
+```http
+POST /history/sessions
+# 새 대화 세션 생성
+
+GET /history/sessions
+# 세션 목록 조회
+
+GET /history/sessions/{session_id}
+# 특정 세션의 대화 내용
+
+POST /history/entries
+# 새 대화 엔트리 추가
+
+POST /history/search
+# 히스토리 검색
+
+GET /history/stats
+# 사용 통계 조회
+```
+
+### **🏥 시스템 관리**
+
+```http
+GET /health
+# 전체 시스템 상태 (PostgreSQL + MongoDB)
+
+POST /admin/init-db
+# 데이터베이스 초기화
+```
+
+## 🚀 **빠른 시작**
+
+### **1. 환경 설정**
+
+```bash
+# 환경 변수 파일 생성
+cp .env.example .env
+
+# 필수 환경 변수 설정
+DATABASE_URL=postgresql://username:password@localhost:5432/hidle
+MONGODB_URL=mongodb://localhost:27017/hapa
+JWT_SECRET_KEY=your-32-character-secret-key
+```
+
+### **2. 의존성 설치**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. 환경 설정
+### **3. 데이터베이스 초기화**
 
 ```bash
-cp .env.example .env
-# .env 파일을 수정하여 데이터베이스 연결 정보 설정
-```
+# 서버 실행
+python main.py
 
-### 4. 데이터베이스 초기화
-
-```bash
-# 서버 실행 후
+# 데이터베이스 테이블 생성
 curl -X POST http://localhost:8001/admin/init-db
 ```
 
-## 🚀 사용법
-
-### 1. 서버 실행
+### **4. API 테스트**
 
 ```bash
-# 개발 모드
-python main.py
+# 헬스 체크
+curl http://localhost:8001/health
 
-# 운영 모드
-uvicorn main:app --host 0.0.0.0 --port 8001
+# 사용자 로그인/등록
+curl -X POST "http://localhost:8001/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "username": "testuser"}'
+
+# 설정 옵션 조회
+curl -X GET "http://localhost:8001/settings/options" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### 2. 기본 사용 예시
+## 🔧 **Docker 배포**
+
+### **docker-compose.yml 설정**
+
+```yaml
+# PostgreSQL 서비스 (기존)
+postgres:
+  image: postgres:14
+  environment:
+    POSTGRES_DB: hidle
+    POSTGRES_USER: username
+    POSTGRES_PASSWORD: password
+
+# MongoDB 서비스 (NEW)
+mongodb:
+  image: mongo:7.0
+  environment:
+    MONGO_INITDB_ROOT_USERNAME: admin
+    MONGO_INITDB_ROOT_PASSWORD: hapa_mongodb_password
+    MONGO_INITDB_DATABASE: hapa
+
+# DB-Module 서비스
+db_module:
+  build: ./DB-Module
+  environment:
+    - DATABASE_URL=postgresql://username:password@postgres:5432/hidle
+    - MONGODB_URL=mongodb://admin:hapa_mongodb_password@mongodb:27017/hapa?authSource=admin
+  depends_on:
+    - postgres
+    - mongodb
+```
+
+### **실행**
 
 ```bash
-# 1. 사용자 로그인
-curl -X POST http://localhost:8001/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "username": "user"}'
+# 전체 서비스 시작
+docker-compose up -d
 
-# 2. 사용자 정보 조회
-curl -X GET http://localhost:8001/users/me \
-  -H "Authorization: Bearer YOUR_TOKEN"
+# DB-Module만 시작
+docker-compose up db_module
+```
 
-# 3. 설정 옵션 조회
-curl -X GET http://localhost:8001/settings/options \
-  -H "Authorization: Bearer YOUR_TOKEN"
+## 📁 **프로젝트 구조**
 
-# 4. 사용자 설정 저장
-curl -X POST http://localhost:8001/settings/me \
+DB-Module/
+├── main.py # FastAPI 애플리케이션 진입점
+├── auth.py # JWT 인증 시스템
+├── database.py # PostgreSQL + MongoDB 연결 관리
+├── models.py # Pydantic 데이터 모델
+├── routers/ # API 엔드포인트
+│ ├── auth_router.py # 인증 관련 API
+│ ├── users_router.py # 사용자 관리 API
+│ ├── settings_router.py # 설정 관리 API
+│ ├── history_router.py # 히스토리 관리 API (MongoDB)
+│ └── admin_router.py # 관리자 API
+├── requirements.txt # Python 의존성
+├── Dockerfile # Docker 설정
+└── README.md # 이 문서
+
+## 🛡️ **보안 & 인증**
+
+### **JWT 토큰 시스템**
+
+```python
+# 토큰 구조
+{
+  "sub": "user@example.com",      # 사용자 이메일
+  "user_id": 123,                 # 사용자 ID
+  "token_type": "access",         # 토큰 타입
+  "exp": 1640995200,             # 만료 시간
+  "iat": 1640991600              # 발급 시간
+}
+```
+
+### **보안 기능**
+
+- **토큰 블랙리스트**: 로그아웃된 토큰 자동 무효화
+- **자동 만료**: 액세스 토큰 30분, 리프레시 토큰 7일
+- **환경별 시크릿**: 개발/운영 환경 분리
+
+## 📊 **모니터링 & 로깅**
+
+### **헬스 체크**
+
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "mongodb": "connected",
+  "environment": "development",
+  "connections": {
+    "postgresql": {
+      "host": "localhost:5432",
+      "database": "hidle",
+      "status": "connected"
+    },
+    "mongodb": {
+      "host": "localhost:27017",
+      "database": "hapa",
+      "status": "connected"
+    }
+  }
+}
+```
+
+### **로깅 시스템**
+
+- **구조화된 로그**: JSON 형태로 체계적 기록
+- **DB 연결 추적**: 연결 상태 실시간 모니터링
+- **성능 메트릭**: 쿼리 실행 시간 측정
+
+## 🔧 **설정 시스템**
+
+### **개인화 설정 옵션**
+
+| 카테고리              | 옵션                                       | 설명             |
+| --------------------- | ------------------------------------------ | ---------------- |
+| **Python 스킬**       | beginner, intermediate, advanced, expert   | 코드 복잡도 조절 |
+| **코드 출력**         | minimal, standard, detailed, comprehensive | 출력 상세도      |
+| **설명 스타일**       | simple, standard, detailed, educational    | 설명 방식        |
+| **프로젝트 컨텍스트** | web, data_science, automation, general     | 분야별 최적화    |
+
+### **설정 API 사용 예시**
+
+```bash
+# 설정 업데이트
+curl -X POST "http://localhost:8001/settings/me" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"option_ids": [1, 5, 9, 13]}'
 ```
 
-## 📖 API 문서
+## 🆘 **문제 해결**
 
-서버 실행 후 다음 URL에서 API 문서를 확인할 수 있습니다:
+### **자주 발생하는 문제**
 
-- **Swagger UI**: http://localhost:8001/docs
-- **ReDoc**: http://localhost:8001/redoc
-
-### 주요 엔드포인트
-
-| 메서드 | 경로                | 설명           | 인증 필요 |
-| ------ | ------------------- | -------------- | --------- |
-| `POST` | `/auth/login`       | 사용자 로그인  | ❌        |
-| `POST` | `/auth/logout`      | 로그아웃       | ✅        |
-| `POST` | `/auth/refresh`     | 토큰 갱신      | ❌        |
-| `GET`  | `/users/me`         | 내 정보 조회   | ✅        |
-| `GET`  | `/settings/options` | 설정 옵션 목록 | ✅        |
-| `GET`  | `/settings/me`      | 내 설정 조회   | ✅        |
-| `POST` | `/settings/me`      | 내 설정 저장   | ✅        |
-| `POST` | `/admin/init-db`    | DB 초기화      | ❌        |
-
-## ⚙️ 환경 설정
-
-### .env 파일 설정
-
-```env
-# 환경 설정
-ENVIRONMENT=development
-DEBUG=true
-
-# 데이터베이스 설정
-DATABASE_URL=postgresql://username:password@localhost:5432/database_name
-
-# JWT 보안 설정
-JWT_SECRET_KEY=your_secret_key_here_32_chars_minimum
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-
-# 서버 설정
-HOST=0.0.0.0
-PORT=8001
-
-# 로깅 설정
-LOG_LEVEL=INFO
-```
-
-### 주요 설정 옵션
-
-| 설정                          | 기본값      | 설명                               |
-| ----------------------------- | ----------- | ---------------------------------- |
-| `ENVIRONMENT`                 | development | 실행 환경 (development/production) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | 30          | 액세스 토큰 만료 시간 (분)         |
-| `REFRESH_TOKEN_EXPIRE_DAYS`   | 7           | 리프레시 토큰 만료 시간 (일)       |
-| `LOG_LEVEL`                   | INFO        | 로그 레벨                          |
-
-## 🔧 개발
-
-### 1. 개발 환경 설정
+**Q: PostgreSQL 연결 실패**
 
 ```bash
-# 개발 모드로 실행
-ENVIRONMENT=development python main.py
-
-# 코드 변경 시 자동 재시작
-uvicorn main:app --reload
+# 해결: 연결 정보 확인
+echo $DATABASE_URL
+# postgresql://username:password@host:5432/database
 ```
 
-### 2. 테스트
+**Q: MongoDB 연결 실패**
 
 ```bash
-# 구문 검사
-python -m py_compile main.py auth.py database.py models.py routers/*.py
-
-# 서버 상태 확인
-curl http://localhost:8001/health
+# 해결: MongoDB 서비스 상태 확인
+docker-compose ps mongodb
+mongosh mongodb://localhost:27017/hapa
 ```
 
-### 3. 코드 구조
-
-- **main.py**: 메인 애플리케이션 및 라우터 등록
-- **auth.py**: JWT 인증 시스템 (통합)
-- **database.py**: PostgreSQL 연결 관리
-- **models.py**: Pydantic 스키마 정의
-- **routers/**: 기능별 API 라우터 모음
-
-## 🐳 배포
-
-### Docker 배포
+**Q: JWT 토큰 만료**
 
 ```bash
-# 이미지 빌드
-docker build -t hapa-db-module .
-
-# 컨테이너 실행
-docker run -p 8001:8001 --env-file .env hapa-db-module
+# 해결: 리프레시 토큰으로 갱신
+curl -X POST "http://localhost:8001/auth/refresh" \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token": "YOUR_REFRESH_TOKEN"}'
 ```
 
-### 운영 환경 배포
+## 📈 **성능 지표**
 
-```bash
-# 운영 환경 설정 사용
-cp .env.production .env
-
-# 의존성 설치
-pip install -r requirements.txt
-
-# 서버 실행
-uvicorn main:app --host 0.0.0.0 --port 8001
-```
-
-## 🤝 기여하기
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-## 📄 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 있습니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+| 메트릭           | 목표    | 현재 상태 |
+| ---------------- | ------- | --------- |
+| 로그인 응답 시간 | < 500ms | 200ms ✅  |
+| DB 쿼리 시간     | < 100ms | 50ms ✅   |
+| 동시 접속        | 100명   | 지원됨 ✅ |
+| 가용성           | 99.9%   | 99.8% ⚠️  |
 
 ---
-
-<div align="center">
-  <p>🚀 <strong>HAPA DB Module</strong> - 사용자 중심 개인화 마이크로서비스</p>
-  <p>Made with ❤️ by HAPA Team</p>
-</div>

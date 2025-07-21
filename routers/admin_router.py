@@ -35,31 +35,92 @@ async def initialize_database():
                 )
             """)
             
+            # 히스토리 세션 테이블 생성
+            await connection.execute("""
+                CREATE TABLE IF NOT EXISTS conversation_sessions (
+                    id SERIAL PRIMARY KEY,
+                    session_id VARCHAR(50) UNIQUE NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    session_title VARCHAR(200),
+                    status VARCHAR(20) DEFAULT 'active',
+                    primary_language VARCHAR(50) DEFAULT 'python',
+                    tags TEXT[],
+                    project_name VARCHAR(100),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    total_entries INTEGER DEFAULT 0,
+                    question_count INTEGER DEFAULT 0,
+                    answer_count INTEGER DEFAULT 0
+                )
+            """)
+            
+            # 히스토리 엔트리 테이블 생성
+            await connection.execute("""
+                CREATE TABLE IF NOT EXISTS conversation_entries (
+                    id SERIAL PRIMARY KEY,
+                    entry_id VARCHAR(50) UNIQUE NOT NULL,
+                    session_id VARCHAR(50) NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    conversation_type VARCHAR(20) NOT NULL,
+                    content TEXT NOT NULL,
+                    language VARCHAR(50),
+                    code_snippet TEXT,
+                    file_name VARCHAR(255),
+                    line_number INTEGER,
+                    response_time FLOAT,
+                    confidence_score FLOAT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (session_id) REFERENCES conversation_sessions(session_id) ON DELETE CASCADE
+                )
+            """)
+            
+            # 인덱스 생성 (성능 최적화)
+            await connection.execute("""
+                CREATE INDEX IF NOT EXISTS idx_conversation_sessions_user_id 
+                ON conversation_sessions(user_id)
+            """)
+            await connection.execute("""
+                CREATE INDEX IF NOT EXISTS idx_conversation_sessions_session_id 
+                ON conversation_sessions(session_id)
+            """)
+            await connection.execute("""
+                CREATE INDEX IF NOT EXISTS idx_conversation_entries_user_id 
+                ON conversation_entries(user_id)
+            """)
+            await connection.execute("""
+                CREATE INDEX IF NOT EXISTS idx_conversation_entries_session_id 
+                ON conversation_entries(session_id)
+            """)
+            await connection.execute("""
+                CREATE INDEX IF NOT EXISTS idx_conversation_entries_created_at 
+                ON conversation_entries(created_at)
+            """)
+            await connection.execute("""
+                CREATE INDEX IF NOT EXISTS idx_conversation_entries_conversation_type 
+                ON conversation_entries(conversation_type)
+            """)
+            
             # 기존 설정 옵션이 있는지 확인
             existing_count = await connection.fetchval("SELECT COUNT(*) FROM setting_options")
             
             if existing_count == 0:
-                # 설정 옵션 데이터 삽입
+                # 새로운 설정 옵션 데이터 삽입 (9개 핵심 옵션)
                 setting_options = [
-                    (1, 'python_skill_level', 'beginner', 'Python을 처음 배우고 있거나 기본 문법을 학습 중'),
-                    (2, 'python_skill_level', 'intermediate', '기본 문법을 알고 있으며 일반적인 프로그래밍이 가능'),
-                    (3, 'python_skill_level', 'advanced', '복잡한 프로젝트 개발이 가능하며 라이브러리 활용에 능숙'),
-                    (4, 'python_skill_level', 'expert', '최적화, 아키텍처 설계, 고급 패턴 구현이 가능'),
+                    # 🐍 Python 스킬 레벨 (2가지)
+                    (1, 'python_skill_level', 'beginner', '기본 문법 학습 중'),
+                    (2, 'python_skill_level', 'intermediate', '일반적 프로그래밍 가능'),
                     
-                    (5, 'code_output_structure', 'minimal', '핵심 로직만 간결하게 (주석 최소화)'),
-                    (6, 'code_output_structure', 'standard', '일반적인 코드 구조 + 기본 주석'),
-                    (7, 'code_output_structure', 'detailed', '자세한 주석 + 예외 처리 + 타입 힌트'),
-                    (8, 'code_output_structure', 'comprehensive', '문서화 + 테스트 코드 + 최적화 제안'),
+                    # 📝 코드 출력 구조 (3가지)
+                    (3, 'code_output_structure', 'minimal', '핵심 로직만 간결하게'),
+                    (4, 'code_output_structure', 'standard', '기본 주석 포함'),
+                    (5, 'code_output_structure', 'detailed', '예외처리 + 타입힌트'),
                     
-                    (9, 'explanation_style', 'brief', '핵심 내용만 빠르게'),
-                    (10, 'explanation_style', 'standard', '코드 + 간단한 설명'),
-                    (11, 'explanation_style', 'detailed', '개념 + 이유 + 활용법'),
-                    (12, 'explanation_style', 'educational', '단계별 + 예시 + 관련 개념'),
-                    
-                    (13, 'project_context', 'web_development', 'Django, Flask, FastAPI 등 웹 개발'),
-                    (14, 'project_context', 'data_science', 'NumPy, Pandas, 머신러닝 등 데이터 사이언스'),
-                    (15, 'project_context', 'automation', '스크립팅, 업무 자동화'),
-                    (16, 'project_context', 'general_purpose', '다양한 목적의 범용 개발'),
+                    # 💬 설명 스타일 (4가지)
+                    (6, 'explanation_style', 'brief', '핵심 내용만'),
+                    (7, 'explanation_style', 'standard', '코드 + 간단 설명'),
+                    (8, 'explanation_style', 'detailed', '개념 + 이유 + 활용법'),
+                    (9, 'explanation_style', 'educational', '단계별 + 예시'),
                 ]
                 
                 for option in setting_options:
@@ -68,10 +129,18 @@ async def initialize_database():
                         *option
                     )
                 
+                # ID 시퀀스 재설정
+                await connection.execute("SELECT setval('setting_options_id_seq', 9, true)")
+                
                 return {
                     "status": "success",
                     "message": "데이터베이스가 성공적으로 초기화되었습니다.",
-                    "options_created": len(setting_options)
+                    "options_created": len(setting_options),
+                    "categories": {
+                        "python_skill_level": 2,
+                        "code_output_structure": 3,
+                        "explanation_style": 4
+                    }
                 }
             else:
                 return {
