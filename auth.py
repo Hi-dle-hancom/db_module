@@ -148,12 +148,16 @@ class TokenService:
             return payload
             
         except JWTError as e:
-            logger.error(f"JWT 토큰 검증 실패: {str(e)}")
-            logger.error(f"사용된 SECRET_KEY: {SECRET_KEY[:20]}...")
-            logger.error(f"토큰 길이: {len(token)}")
+            logger.error(f"❌ JWT 토큰 디코딩 실패: {str(e)}")
+            logger.error(f"❌ 사용된 SECRET_KEY 길이: {len(SECRET_KEY)}")
+            logger.error(f"❌ 사용된 SECRET_KEY prefix: {SECRET_KEY[:20]}...")
+            logger.error(f"❌ 토큰 길이: {len(token)}")
+            logger.error(f"❌ 토큰 prefix: {token[:50]}...")
+            logger.error(f"❌ 알고리즘: {ALGORITHM}")
+            logger.error(f"❌ JWTError 타입: {type(e).__name__}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="토큰 검증에 실패했습니다"
+                detail="Could not validate credentials"
             )
     
     def refresh_access_token(self, refresh_token: str) -> Dict[str, str]:
